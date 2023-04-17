@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>画一个力学图(Force)</title>
+    <script src="d3.v3.min.js"></script>
+    <!--<script src="https://d3js.org/d3.v4.js"></script>-->
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <!-- Function for radial charts -->
+    <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3-scale-radial.js"></script>
+    <script src="http://marvl.infotech.monash.edu/webcola/cola.js"></script>
+    <!-- 新 Bootstrap4 核心 CSS 文件 -->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+    <!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <!-- bootstrap.bundle.min.js 用于弹窗、提示、下拉菜单，包含了 popper.min.js -->
+    <script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+    <!-- 最新的 Bootstrap4 核心 JavaScript 文件 -->
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+</head>
+<style type="text/css">
+    #col-1{
+        float: left;
+        width: 20%;
+    }
+    #col-2{
+        float: left;
+        width: 60%;
+
+    }
+    #col-3{
+        float: left;
+        width: 20%;
+
+    }
+    .node {
+        stroke: #fff;
+        stroke-width: 1.5px;
+        cursor: pointer;
+    }
+
+    .key_node {
+        stroke: #FF0000;
+        stroke-width: 3px;
+        cursor: pointer;
+    }
+
+    .search_node {
+        stroke: #FFF000;
+        stroke-width: 3px;
+        cursor: pointer;
+    }
+
+    .nodetext {
+        fill: #000;
+        font-size: 12px;
+        cursor: pointer;
+        pointer-events: none;
+    }
+</style>
+<div id="col-1">
+    <div id="TheNumber"  >
+        <span class="badge badge-pill badge-primary" id='I_count' style="background:#f94144;color:white;">IP</span><br>
+        <span class="badge badge-pill badge-secondary" id='C_count' style="background:#ff924c;color:white;">Cert</span><br>
+        <span class="badge badge-pill badge-success" id='D_count' style="background:#ffca3a;color:white;">Domain</span><br>
+        <span class="badge badge-pill badge-danger" id='WN_count' style="background:#8ac926;color:white;">Whois_Name</span><br>
+        <span class="badge badge-pill badge-warning" id='WP_count' style="background:#52a675;color:white;">Whois_Phone</span><br>
+        <span class="badge badge-pill badge-info" id='WE_count' style="background:#1982c4;color:white;">Whois_Email</span><br>
+        <span class="badge badge-pill badge-light" id='IP_C_count' style="background:#4267ac;color:white;">IP_C</span><br>
+        <span class="badge badge-pill badge-dark" id='A_count' style="background:#6a4c93;color:white;">ASN</span><br>
+    </div>
+    <br>
+    <button type="button" class="btn btn-secondary btn-lg" id="but_industry">industry</button>
+    <br>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" id="search_id" placeholder="Search node's ID" aria-label="Search node's ID" aria-describedby="button-addon2">
+        <div class="input-group-append">
+            <button class="btn btn-outline-secondary" id="but_search" type="button" id="button-addon2">搜索</button>
+        </div>
+    </div>
+</div>
+<div id="col-2">
+    <div id="Panel"></div>
+</div>
+<div id="col-3">
+    <div id="Chord-view"></div>
+</div>
+
+<body>
+    <script type="text/javascript">
+        //var width=1200,height=1000
+        var width=document.documentElement.clientWidth*0.6,
+            height=document.documentElement.clientHeight,//why document.body.clientHeight=0？
+            margin={left:width*0.05,top:height*0.05,right:width*0.05,bottom:height*0.05};
+
+        //取得20个颜色的序列
+        var color = d3.scale.category20();
+        var colorlist1=['#f94144','#f3722c','#f8961e','#f9c74f','#90be6d','#43aa8b','#4d908e','#577590'];
+        var colorlist2=['#f88c84','#f66f65','#d07569','#e09b83','#f5b281','#f9cdae','#d1e4e4','#b8d4d4']
+        var colorlist3=['#ff595e','#ff924c','#ffca3a','#8ac926','#52a675','#1982c4','#4267ac','#6a4c93']
+        //var color = d3.scaleOrdinal(d3.schemeCategory10);
+        var node_click = new Array() ;
+        //定义画布
+        var svg = d3.select("#Panel").append("svg")
+            .call(
+                d3.behavior.zoom()     // 注意需要放在这里，以监测svg元素，可以测试放在g元素的效果。
+            .scaleExtent([-10, 10])
+            // .on("zoom", zoomHandler)
+            )
+            .attr("width", width)
+            .attr("height", height)
+            .append('g')
+            .attr('class', 'map');
+
+        var flag_but_industry=0;
+        var temp_color=0;
+
+        var data_name="data/1.1/result"
+
+        var key_node1=["Domain_c58c149eec59bb14b0c102a0f303d4c20366926b5c3206555d2937474124beb9","Domain_f3554b666038baffa5814c319d3053ee2c2eb30d31d0ef509a1a463386b69845"];
+        var key_node3=["Domain_24acfd52f9ceb424d4a2643a832638ce1673b8689fa952d9010dd44949e6b1d9","Domain_9c72287c3f9bb38cb0186acf37b7054442b75ac32324dfd245aed46a03026de1","Domain_717aa5778731a1f4d6f0218dd3a27b114c839213b4af781427ac1e22dc9a7dea","Domain_8748687a61811032f0ed1dcdb57e01efef9983a6d9c236b82997b07477e66177","Whois_Phone_f4a84443fb72da27731660695dd00877e8ce25b264ec418504fface62cdcbbd7"];
+
+
+        //定义力学结构
+        /*
+        var force = d3.layout.force()
+            .charge(-150)
+            .linkDistance(100)
+            .size([width, height]);
+            */
+
+        //定义力学结构
+        var force = d3.layout.force()
+            .charge(-200)//-150;设定引力，是排斥还是吸引，默认值为-30。值为+，则相互吸引，绝对值越大吸引力越大。值为-，则相互排斥，绝对值越大排斥力越大。
+            .linkDistance(80)//指定结点连接线的距离，默认为20。如果距离是一个常数，那么各连接线的长度总是固定的；如果是一个函数，那么这个函数是作用于各连接线（ source , target ）的。
+            .size([width, height])//用于设定力学图的作用范围，使用方法为 force.size( [ x , y ] )，这个函数用于指定两件事：重力的重心位置为 ( x/2 , y/2 )
+            .gravity(1);//以 size 函数设定的中心产生重力，各顶点都会向中心运动，默认值为0.1。也可以设定为0，则没有重力的作用。
+
+
+        /*
+        let nodeRadius =  6;//6
+
+        var constraints = [];
+        for (var i = 0; i < 10; i++) {
+            //graph.nodes[0].y + gap <= graph.nodes[1].y
+            constraints.push({ "axis": "x", "left": i, "right": 10, "gap": nodeRadius });
+            constraints.push({ "axis": "y", "left": i, "right": 10, "gap": nodeRadius });
+        };
+
+        var force = cola.d3adaptor()
+            .linkDistance(45)
+            .size([width, height]);
+            */
+
+            var data1={Country:"0",attr:"0"}
+            var data2={Country:"1",attr:"1"}
+            var data3={Country:"2",attr:"2"}
+            var data4={Country:"3",attr:"3"}
+            var data5={Country:"4",attr:"4"}
+            var data6={Country:"5",attr:"5"}
+            var data7={Country:"6",attr:"6"}
+            var data8={Country:"7",attr:"7"}
+            var data9={Country:"8",attr:"8"}
+            var data=[]
+            data[0]=data1
+            data[1]=data2
+            data[2]=data3
+            data[3]=data4
+            data[4]=data5
+            data[5]=data6
+            data[6]=data7
+            data[7]=data8
+            data[8]=data9
+            var data0=[]
+            
+            // data[0].Country="0"
+            // data[0].attr="0"
+            console.log("Data",data,typeof(data))
+
+            var x = d3.scale.ordinal()
+                        .domain([0,1,2,3,4,5,6,7,8,9])
+                        .rangePoints([0, 2 * Math.PI]);   
+            console.log("X(1)",x(0))           
+            console.log("X(1)",x(1))           
+            console.log("X(1)",x(2))           
+            console.log("X(1)",x(9))           
+            var innerRadius = 10
+            var outerRadius = 30; 
+           
+            var y =d3.scale.linear()
+          .range([innerRadius, outerRadius])  
+          .domain([0, 1]); 
+             
+            console.log("data",data,data[0])
+
+        // 渲染数据
+        //show();
+
+        // 渲染函数
+        //function show(){
+            //读取数据
+            d3.json(data_name+".json", function (error, graph) {//miserables.json result-cut.json
+
+                var industry=[]
+                // console.log("1111",graph.nodes[0].industry,(graph.nodes))
+                for(var key in graph.nodes) {
+                    data0[key]=new Array();
+                    var temp=(graph.nodes[key].industry).replace("[","")
+                    temp=temp.replace("]","")
+                    temp=temp.replaceAll("'","")
+                    temp=temp.replaceAll(",","")
+                    temp=temp.replaceAll(" ","")
+                    // console.log(key,"temp",temp);
+                    var temp1=[]
+                    data0[key][0]=temp.indexOf('A')==-1?0:1
+                    data0[key][1]=temp.indexOf('B')==-1?0:1
+                    data0[key][2]=temp.indexOf('C')==-1?0:1
+                    data0[key][3]=temp.indexOf('D')==-1?0:1
+                    data0[key][4]=temp.indexOf('E')==-1?0:1
+                    data0[key][5]=temp.indexOf('F')==-1?0:1
+                    data0[key][6]=temp.indexOf('G')==-1?0:1
+                    data0[key][7]=temp.indexOf('H')==-1?0:1
+                    data0[key][8]=temp.indexOf('I')==-1?0:1
+
+                    industry[key]=temp1
+                    // console.log("data0",data0[key])
+
+                }
+                force
+                    .nodes(graph.nodes)
+                    .links(graph.links)
+                    .start();
+
+                //定义连线
+                var link = svg.selectAll(".link")
+                    .data(graph.links)
+                    .enter()
+                    .append("line")
+                    .attr("class", "link")
+                    .attr("stroke", "#09F")
+                    .attr("stroke-opacity", "0.4")
+                    .style("stroke-width", 1);
+                //定义节点标记
+                var node = svg.selectAll(".node")
+                    .data(graph.nodes)
+                    .enter()
+                    .append("g")
+                    .call(force.drag)
+                var but_industry=document.getElementById('but_industry');
+                but_industry.onclick=function () {
+                    flag_but_industry=flag_but_industry+1;
+                    console.log("flag:",flag_but_industry)
+                    if(flag_but_industry%2==1){
+
+                        //节点圆形标记
+                        var count=-1
+                        node.append("g")
+                        .selectAll("path").data(data)
+                            .enter()
+                            .append("path")
+                            .attr("class","industry-circle")
+                            .attr('fill', function(d){return(colorlist1[d.Country]) })
+                            .attr("d", d3.svg.arc()
+                            
+                                .innerRadius(innerRadius)  // 内半径
+
+                                .outerRadius(function(d,i) {
+                                    // console.log("d.attr",d.attr)
+
+                                    if(d.attr==0){
+                                        count=count+1
+                                        // console.log("count",count,"d.attr",d.attr,data0[count][d.attr],y(data0[count][d.attr]))
+
+                                        return y(data0[count][d.attr]);
+                                    }
+                                    // console.log("count",count,"d.attr",d.attr,data0[count][d.attr],y(data0[count][d.attr]))
+                                    return y(data0[count][d.attr]);
+                                })
+
+                                .startAngle(function(d) {
+                                    //  console.log("开始画图的位置",d.Country,x(d.Country))
+                                    return x(d.Country); })
+
+                                .endAngle(function(d) {
+                                    //  console.log("结束画图的位置",x(d.Country) + 0.5)
+                                    return x(d.Country) + 0.6; })
+                                .padAngle(0.25)
+                                .padRadius(innerRadius))
+                    }
+                    else{
+                        node.selectAll(".industry-circle").remove();
+                    }
+
+
+
+                }
+              
+
+                var node_circle = node.append("circle")
+                    //.attr("class", "node")
+                    .attr("class",function (d){
+                        if(d.id==key_node1[0]){
+                            return "key_node";
+                        }
+                        else if(d.id==key_node1[1]){
+                            return "key_node";
+                        }
+                        else return "node";
+                    })
+                    .attr("id",function (d,i){
+                        node_click[i]=0
+                        return d.id;
+                    })
+                    .attr("quality",function (d){
+                        return d.quality
+                    })
+                    .attr("industry",function (d){
+                        return d.industry
+                    })
+
+
+                    .attr("r", function (d) {
+                        if(d.quality<200&&d.quality>=50){
+                            return 20
+                        }
+                        if(d.quality<50&&d.quality>=0){
+                            return 10
+                        }
+
+
+                        return 10 ;
+                    })
+                    .style("fill", function (d) {
+                        //return "#000"
+                        if((d.type)=='I') temp_color=0;
+                        else if((d.type)=='C') temp_color=1;
+                        else if((d.type)=='D') temp_color=2;
+                        else if((d.type)=='WN') temp_color=3;
+                        else if((d.type)=='WP') temp_color=4;
+                        else if((d.type)=='WE') temp_color=5;
+                        else if((d.type)=='IP_C') temp_color=6;
+                        else if((d.type)=='ASN') temp_color=7;
+
+                        return colorlist3[temp_color];
+                    })
+                    .on('click', function (d,i) {
+                    if(node_click[i]==0){
+
+                        node_click[i]=1;
+                        
+                        d3.select("#content"+this.id)
+                        // // node
+                        .append("g")
+                            .attr("width",200)
+                            .attr("height",200)
+                            .attr("transform","translate(" +80 + "," + 0 + ")")
+                            .append("text")
+                                .style("text-anchor", "middle")
+                                .text("真实场景删除")
+                                .on('click', function (d,i) {
+                                    console.log("真实场景删除")
+                                })
+                        
+                                d3.select("#content"+this.id)
+                        // // node
+                        .append("g")
+                            .attr("width",200)
+                            .attr("height",200)
+                            .attr("transform","translate(" +80 + "," + 25 + ")")
+                                .append("text")
+                                .style("text-anchor", "middle")
+                                .text("Neo4j删除")
+                                .on('click', function (d,i) {
+                                    console.log("Neo4j删除")
+                                })
+
+                                d3.select("#content"+this.id)
+                        // // node
+                        .append("g")
+                            .attr("width",200)
+                            .attr("height",200)
+                            .attr("transform","translate(" +80 + "," + 50 + ")")
+                                .append("text")
+                                .style("text-anchor", "middle")
+                                .text("套索删除")
+                                .on('click', function (d,i) {
+                                    console.log("套索删除")
+                                })
+
+                        
+                        d3.select(this)
+                            .attr("r", 20)
+                            .style("opacity", 1)
+                            .style("stroke", "orange")
+                            .style("stroke-width", 5);  //加粗，以高亮。
+
+                        //相连边显示
+                        link.filter(function(l) { return l.source == d; }).style('stroke', '#208070').style('stroke-width', 1.6);
+                        link.filter(function(l) { return l.target == d; }).style('stroke', '#900000').style('stroke-width', 1.6);
+
+                        console.log("d.id:",d.id);
+                        
+                    }else {
+                        //console.log(node_click[i]);
+                        node_click[i]=0;
+                        d3.select("#content"+this.id).remove()
+                        d3.select(this)
+                            /*
+                            .attr("class",function (d){
+                                if(d.id==key_node1[0]){
+                                    return "key_node";
+                                }
+                                else if(d.id==key_node1[1]){
+                                    return "key_node";
+                                }
+                                else return "node";
+                            });
+                            */
+
+                            .attr("r", function (d) {
+                                    if(d.quality<200&&d.quality>=50){
+                                        return 20
+                                    }
+                                    if(d.quality<50&&d.quality>=0){
+                                        return 10
+                                    }
+
+
+                                return 10 ;
+                            })
+                            .style("stroke", "#fff")
+                            .style("stroke-width", 1.5);
+
+
+                        //相连边显示
+                        link.filter(function(l) { return l.source == d; }).style('stroke', '#09F').style('stroke-width', 1);
+                        link.filter(function(l) { return l.target == d; }).style('stroke', '#09F').style('stroke-width', 1);
+
+                    }
+
+                });
+                //单击节点高亮并输出信息
+
+                //标记鼠标悬停的标签
+                node
+                .append("g")
+                            .attr("class","content")
+                            .attr("id",function (d) {
+
+                        return "content"+d.id
+                        })
+                // .append("svg")
+                // .attr("width", 5)
+                // .attr("height", 20)
+                    node.append("title")
+                    .text(function (d) {
+
+                        return "name:",d.id+"————"+d.industry;
+                    })
+                    .select("text")
+                    .attr("font-size",40)
+
+                ;
+                //节点上显示的姓名
+
+                // 统计每个类型的个数
+                var Nodedic ={'D':0, I:0,IP_C:0, A:0,C:0,WN:0,WP:0,WE:0};
+                node.append("text")
+                    .attr("dy", ".3em")
+                    .attr("class", "nodetext")
+                    .style("text-anchor", "middle")
+                    .text(function (d) {
+                        Nodedic[d.type]=Nodedic[d.type]+1;
+                        //return d.type;
+                    });
+
+                //输出到-信息-面板
+                var div_info = document.getElementById('TheNumber');
+                div_info.innerHTML +="subgraph"+" — "+data_name+"<br>"
+                for(var item in Nodedic){
+                    console.log(item,Nodedic[item]);
+                    //div_info.innerHTML +=item+" — "+Nodedic[item]+"<br>"
+                    var count_search = document.getElementById(item+"_count");
+                    //输出节点count值
+                    count_search.innerHTML =item+" — "+Nodedic[item]+"<br>"
+                    //更改count标签颜色
+                }
+
+
+                //--------------------------- search -------------------------------
+                var search_id = document.getElementById("search_id");
+                var but_search = document.getElementById("but_search");
+
+                but_search.onclick=function () {
+
+                    var node_cir = node_circle//'.node'||'.key_node'
+                        .attr("class",function (d){
+
+                            if(d.id==search_id.value){
+                                return "search_node";
+                                //console.log("find!");
+                            }
+                            else if(d.id==key_node1[0]){
+                                return "key_node";
+                            }
+                            else if(d.id==key_node1[1]){
+                                return "key_node";
+                            }
+                            else return "node";
+                        })
+
+
+                }
+
+
+
+
+
+                //开始力学动作
+                force.on("tick", function () {
+                    link.attr("x1", function (d) {
+                        return d.source.x;
+                    })
+                        .attr("y1", function (d) {
+                            return d.source.y;
+                        })
+                        .attr("x2", function (d) {
+                            return d.target.x;
+                        })
+                        .attr("y2", function (d) {
+                            return d.target.y;
+                        });
+                    node.attr("transform", function (d) {
+                        // console.log("d.x",d.x)
+                        return "translate(" + d.x + "," + d.y + ")";
+                    })
+                    
+                    ;
+                });
+
+
+
+
+            });
+
+        //}
+
+
+        function zoomHandler() {
+            /*
+            var transform = d3.event.transform;
+
+            svg.attr("transform", "translate("
+                + transform.x + "," + transform.y
+                + ")scale(" + transform.k + ")");
+                */
+
+            svg.attr("transform",
+                "translate("+d3.event.translate+")scale(" +
+                d3.event.scale + ")");
+        }
+
+        // 搜索
+        function searchFn(){
+
+            console.log("searching...");
+
+            var search_id = document.getElementById("search_id");
+
+            var node_cir = svg.selectAll("circle")//'.node'||'.key_node'
+                .attr("class",function (d){
+                    console.log(d);
+                    console.log(search_id);
+                    if(d.id==search_id){
+                        return "search_node";
+                        console.log("find!");
+                    }
+                })
+
+        }
+
+        /*
+        // 键盘事件,回车搜索
+        search.onkeydown = function(e){
+            if(e.keyCode == "13"){
+                // 调用搜索函数
+                searchFn();
+            }
+        }
+        */
+
+        //----------------------------------chord----------------------------------
+
+        var data_name =['I','C','D','WN','WP','WE','I_C','A']
+        var chord_data=[
+            [0, 0, 107, 0, 0, 0, 0, 0],
+            [0, 0, 116, 0, 0, 0, 0, 0],
+            [0, 0, 8, 0, 0, 0, 0, 0],
+            [0, 0, 57, 0, 0, 0, 0, 0],
+            [0, 0, 57, 0, 0, 0, 0, 0],
+            [0, 0, 61, 0, 0, 0, 0, 0],
+            [5, 0, 0, 0, 0, 0, 0, 0],
+            [5, 0, 0, 0, 0, 0, 0, 0]
+        ];
+
+
+        // 弦布局
+        var chord_layout = d3.layout.chord()
+            .padding(0.03)
+            .sortSubgroups(d3.descending)
+            .matrix(chord_data);
+
+        // 布局转化数据
+        var groups = chord_layout.groups();
+        var chords = chord_layout.chords();
+        console.log(groups);
+        console.log(chords);
+
+        // svg画布
+        var chord_width = width*0.2;
+        var chord_height = width*0.2;
+        var svg_chord = d3.select("#Chord-view")
+            .append("svg")
+            .attr("width",chord_width)
+            .attr('height', chord_height)
+            .append("g")
+            .attr('transform', 'translate(' + chord_width/2 + "," + chord_height/2 + ")");
+
+        var color20 = d3.scale.category20();
+        var colorlist3=['#ff595e','#ff924c','#ffca3a','#8ac926','#52a675','#1982c4','#4267ac','#6a4c93']
+
+
+        // 弧生成器
+        var innerRadius = chord_width/2 * 0.7;
+        var outerRadius = innerRadius * 1.1;
+        var outer_arc = d3.svg.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius);
+
+        // 绘制节点
+        function fade(opacity){
+            return function(g,i){
+                g_inner.selectAll("path")
+                    .filter(function(d) {
+                        return d.source.index != i && d.target.index != i;
+                    })
+                    .transition()
+                    .style("opacity",opacity);
+            }
+        }
+
+        var g_outer = svg_chord.append("g");
+        g_outer.selectAll("path")
+            .data(groups)
+            .enter()
+            .append("path")
+            .style("fill",function(d) {
+                return colorlist3[d.index];
+            })
+            .style("stroke",function(d) {
+                colorlist3[d.index];
+            })
+            .attr("d",outer_arc)   // 此处调用了弧生成器
+            .on("mouseover",fade(0.0))  // 0.0完全透明
+            .on("mouseout",fade(1.0))   // 1.0完全不透明
+        ;
+
+        g_outer.selectAll("text")
+            .data(groups)
+            .enter()
+            .append("text")
+            .each(function(d,i) {   // 对每个绑定的数据添加两个变量
+                d.angle = (d.startAngle +　d.endAngle) / 2;
+                d.name = data_name[i];
+            })
+            .attr("dy",".35em")
+            .attr('transform', function(d) {    // 平移属性
+                var result =  "rotate(" +　(d.angle*180/Math.PI) + ")";
+                result += "translate(0," + -1 * (outerRadius + 10) + ")";
+                if (d.angle > Math.PI * 3 / 4 && d.angle < Math.PI * 5 / 4 )
+                    result += "rotate(180)";
+                return result;
+            })
+            .text(function(d) {
+                return d.name;
+            });
+
+        // 弦生成器
+        var inner_chord = d3.svg.chord()
+            .radius(innerRadius);
+
+        // 绘制内部弦,一共有5*5=25条
+        var g_inner = svg_chord.append("g")
+            .attr("class","chord");
+
+        g_inner.selectAll("path")
+            .data(chords)
+            .enter()
+            .append("path")
+            .attr("d",inner_chord)  // 调用弦的路径值
+            .style("fill",function(d) {
+                return colorlist3[d.source.index];
+            })
+            .style("opacity",1);
+
+        //----------------------------------chord----------------------------------
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <title>画一个力学图(Force)</title>
+  <script src="d3.v3.min.js"></script>
+  <!--<script src="https://d3js.org/d3.v4.js"></script>-->
+  <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+  <!-- Function for radial charts -->
+  <script src="https://cdn.jsdelivr.net/gh/holtzy/D3-graph-gallery@master/LIB/d3-scale-radial.js"></script>
+  <script src="http://marvl.infotech.monash.edu/webcola/cola.js"></script>
+
+  <style>
+    :root{
+      /*定义颜色常量*/
+      --line-border-fill: #3498db;
+      --line-border-empty: #e0e0e0;
+    }
+    
+   
+    .container{
+      text-align: center;
+    }
+    .progrese-container{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      width: 800px;
+      position: relative;
+    }
+    .progrese-container::before{
+      content: "";
+      background-color: var(--line-border-empty);
+      height: 4px;
+      width: 100%;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: -1;
+    }
+    .progress{
+      background-color: var(--line-border-fill);
+      position: absolute;
+      height: 4px;
+      transform: translateY(-50%);
+      width: 0%;
+      top: 50%;
+      z-index: -1;
+      transition: all .3s ease-in-out;
+    }
+    .circleProcesss{
+      background-color: white;
+      color: #999;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 3px solid var(--line-border-empty);
+      border-radius: 50%;
+    }
+    .circleProcesss.active{
+      border-color: var(--line-border-fill);
+    }
+    .btn{
+      background-color: var(--line-border-fill);
+      color: #fff;
+      border-radius: 5px;
+      border: 0;
+      font-size: 14px;
+      margin: 5px;
+      padding: 8px 30px;
+    }
+    .btn:active{
+      transform: scale(0.98);
+    }
+    .btn:focus{
+      outline: none;
+    }
+    .btn:disabled{
+      background-color: var(--line-border-empty);
+      cursor: not-allowed;
+
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="progrese-container">
+    <div class="progress" id="progress"></div>
+    <div class="circleProcesss active" id="circle1">20%</div>
+    <div class="circleProcesss" id="circle2">40%</div>
+    <div class="circleProcesss" id="circle3">60%</div>
+    <div class="circleProcesss" id="circle4">80%</div>
+    <div class="circleProcesss" id="circle5">100%</div>
+  </div>
+  <button class="btn" id="prev" disabled>Prev</button>
+  <button class="btn" id="next" >Next</button>
+</div>
+
+<script>
+    d3.selectAll(".circleProcesss")
+        // .on("mouseover",function(event, d){
+        //     this.style.cursor='hand'
+        // })
+        .on("click",function(){
+        console.log("你点击了圆圈！", currentActive)
+        if(currentActive<5){
+          currentActive++;
+          update();
+        }
+        
+    })
+  const progress = document.getElementById('progress');
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+  const circles = document.querySelectorAll('.circleProcesss');
+  //定义一个常量来来控制判断是否要用disabled。
+
+  let currentActive = 1;
+  next.addEventListener('click',()=>{
+    currentActive++;
+    update();
+  })
+  prev.addEventListener('click',()=>{
+    currentActive--;
+    update()
+  })
+  function update() {
+    console.log("当前点击的按钮名称",currentActive)
+    
+    circles.forEach((item,index)=>{  
+      if(index<currentActive){
+        //如果没有到达最后一点，就给每一个点添加active来控制按钮的颜色。
+        item.classList.add('active')
+      }
+      else{
+        //点击了prev，这个时候index就等于currentActive，这时候就让按钮的颜色变灰。
+        item.classList.remove('active')
+        
+      }
+      //蓝色长条的长度控制。点击next宽度就加总长度的33%
+      progress.style.width = (currentActive - 1)/(circles.length-1)*100+"%"
+    })
+    if(currentActive < 2){
+      //当点击prev到了第一个就变成灰色，不能点击
+      prev.disabled = true
+    }else {
+      //其他情况就可以点击
+      prev.disabled = false
+    }
+    if(currentActive < 5){
+      //如果没有到达最后就可以点击next。
+      next.disabled = false
+    }else {
+      //到了最后就不能点击了。
+      next.disabled = true
+    }
+  }
+</script>
+</body>
+</html>

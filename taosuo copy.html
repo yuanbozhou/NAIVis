@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+  
+
+    
+    .dot {
+        stroke: #000;
+    }
+
+    .lasso path {
+        stroke: rgb(80,80,80);
+        stroke-width:2px;
+    }
+
+    .lasso .drawn {
+        fill-opacity:.05 ;
+    }
+
+    .lasso .loop_close {
+        fill:none;
+        stroke-dasharray: 4,4;
+    }
+
+    .lasso .origin {
+        fill:#3399FF;
+        fill-opacity:.5;
+    }
+
+    .not_possible {
+        fill:rgb(200,200,200);
+    }
+
+    .possible {
+        fill:#EC888C;
+    }
+
+</style>
+<body>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src = "http://axc.net/code_libraries/lasso/lasso.min.js"></script>
+
+<script>
+
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    
+
+    var color = d3.scale.category10();
+
+   
+
+    var svgLasso = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Lasso functions to execute while lassoing
+    var lasso_start = function() {
+        // lasso.items()
+        // .attr("r",function(d){
+        //         // console.log("恢复1",d);
+        //         return 3.5;
+        //     })
+        //     .style("fill",null) // clear all of the fills
+        //     .classed({"not_possible":true,"selected":false}); // style as not possible
+
+    };
+
+    var lasso_draw = function() {
+        // // Style the possible dots
+        // lasso.items().filter(function(d) {return d.possible===true})
+        //     .classed({"not_possible":false,"possible":true});
+
+        // // Style the not possible dot
+        // lasso.items().filter(function(d) {return d.possible===false})
+        //     .classed({"not_possible":true,"possible":false});
+
+    };
+
+    var lasso_end = function() {
+
+        // Style the selected dots
+        var t=0
+        var CircleLasso
+        lasso.items().filter(function(d) {return d.selected===true})
+            .classed({"not_possible":false,"possible":false})
+            .attr("r",function(d){
+                
+                CircleLasso=(lasso.items().filter(function(d) 
+                {if(d.selected===true){t++;} return d.selected===true})[0])
+
+                 for(var j=0;j<CircleLasso.length;j++){
+                    //  console.log("yuanbo",d)
+                    // d3.select("#"+CircleLasso[j].id).remove()
+                }
+                
+                return 20;
+            })
+
+           
+            
+
+        // 不恢复了
+        // lasso.items().filter(function(d) {return d.selected===false})
+        //     .classed({"not_possible":false,"possible":false})
+        //     .attr("r",function(d){
+        //         // console.log("恢复2");
+        //         return 3.5;
+        //     });
+
+    };
+
+    // Create the area where the lasso event can be triggered
+    var lasso_area =svgLasso.append("rect")
+        .attr("width",width)
+        .attr("height",height)
+        .style("opacity",0);
+
+    // Define the lasso
+    var lasso = d3.lasso()
+        .closePathDistance(75) // max distance for the lasso loop to be closed
+        .closePathSelect(true) // can items be selected by closing the path?
+        .hoverSelect(true) // can items by selected by hovering over them?
+        .area(lasso_area) // area where the lasso can be started
+        .on("start",lasso_start) // lasso start function
+        .on("draw",lasso_draw) // lasso draw function
+        .on("end",lasso_end); // lasso end function
+
+    // Init the lasso on the svg:g that contains the dots
+    svgLasso.call(lasso);
+
+    d3.tsv("taosuo-da ta.tsv", function(error, data) {
+
+      
+        console.log("data",data,typeof(data),data[0])
+        svgLasso.selectAll(".node")
+            .data(data)
+            .enter().append("circle")
+            .attr("id",function(d,i) {return "dot_" + i;}) // added
+            .attr("class", "node")
+            .attr("r", 3.5)
+            .attr("cx", function(d) { return (d.sepalWidth)*100; })
+            .attr("cy", function(d) { return (d.sepalLength)*50; })
+
+            // 画个套索
+        lasso.items(d3.selectAll(".node"));
+        
+
+    });
+
+</script>

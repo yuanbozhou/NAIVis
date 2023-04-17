@@ -1,0 +1,16 @@
+sepalLength	sepalWidth	petalLength	petalWidth	species
+5.1	3.5	1.4	0.2	setosa
+4.9	3.0	1.4	0.2	setosa
+4.7	3.2	1.3	0.2	setosa
+4.6	8.1	1.5	0.2	setosa
+5.0	3.6	1.4	0.2	setosa
+5.4	3.9	1.7	0.4	setosa
+4.6	3.4	1.4	0.3	setosa
+5.0	3.4	1.5	0.2	setosa
+4.4	2.9	1.4	0.2	setosa
+4.9	3.1	1.5	0.1	setosa
+{"nodes":[
+    {"index": "0，", "num": "2046456", "name": "f504be92d3.com", "industry": "[]", "id": "Domain_f504be92d31f1bb18deab590ebeff7b173d063a25c6bc21306c92e44a65173e3", "quality": "2.5", "type": "D"}, 
+    {"index": "1", "num": "975293", "name": "6bf509f81c.com", "industry": "[]", "id": "Domain_6bf509f81c9be90e91593f0cb473be89d0dd9854c28fc146172bc4b1b4497d74", "quality": "5.0", "type": "D"}, 
+{"index": "2", "num": "1184220", "name": "86ce4e359d.com", "industry": "[]", "id": "Domain_86ce4e359d190cbb9341d015a28bae1692fbe79486a7dc6993adb627b9c743bf", "quality": "5.0", "type": "D"}
+]}
